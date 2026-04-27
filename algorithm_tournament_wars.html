@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0f;
+    color: #e8e4d0;
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .arena {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .arena-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    text-align: center;
+    background: linear-gradient(135deg, #ff6b35, #f7931e, #ffcd3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .arena-sub {
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* SCREEN VIEWS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ============ SELECT SCREEN ============ */
+  .select-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .algo-card {
+    background: #12121a;
+    border: 1.5px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 16px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    text-align: center;
+  }
+
+  .algo-card:hover {
+    border-color: #ff6b35;
+    background: #1a1a26;
+    transform: translateY(-2px);
+  }
+
+  .algo-card.selected {
+    border-color: #ffcd3c;
+    background: #1e1a10;
+    box-shadow: 0 0 20px rgba(255,205,60,0.2);
+  }
+
+  .algo-card .check {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: #ffcd3c;
+    color: #000;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    font-size: 11px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  .algo-card.selected .check { display: flex; }
+
+  .algo-emoji { font-size: 28px; margin-bottom: 6px; }
+  .algo-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; color: #e8e4d0; }
+  .algo-class { font-size: 9px; color: #ff6b35; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .algo-tagline { font-size: 10px; color: #888; margin-top: 6px; line-height: 1.4; }
+
+  .select-hint { text-align: center; font-size: 11px; color: #555; margin-bottom: 16px; }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { transform: scale(1.02); opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  /* ============ BRACKET SCREEN ============ */
+  .bracket-wrap {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+
+  .bracket-round {
+    flex-shrink: 0;
+    width: 150px;
+  }
+
+  .round-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #555;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .bracket-slot {
+    background: #12121a;
+    border: 1.5px solid #2a2a3a;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .bracket-slot.active { border-color: #ff6b35; }
+  .bracket-slot.winner { border-color: #ffcd3c; background: #1e1a10; }
+  .bracket-slot.loser { opacity: 0.4; }
+  .bracket-slot.tbd { border-style: dashed; border-color: #333; }
+  .bracket-slot .slot-emoji { font-size: 18px; }
+  .bracket-slot .slot-name { font-size: 11px; font-weight: 700; }
+  .bracket-slot .slot-class { font-size: 9px; color: #ff6b35; }
+
+  .vs-connector { text-align: center; color: #333; font-size: 10px; margin: -4px 0; padding: 2px; }
+
+  /* ============ BATTLE SCREEN ============ */
+  .battle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .fighter-card {
+    background: #12121a;
+    border: 2px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 16px;
+    width: 220px;
+    text-align: center;
+    transition: all 0.4s;
+  }
+
+  .fighter-card.fighting { border-color: #ff6b35; animation: pulse 1s infinite alternate; }
+  .fighter-card.won { border-color: #ffcd3c; background: #1e1a10; }
+  .fighter-card.lost { border-color: #333; opacity: 0.5; }
+
+  @keyframes pulse {
+    from { box-shadow: 0 0 10px rgba(255,107,53,0.3); }
+    to { box-shadow: 0 0 25px rgba(255,107,53,0.6); }
+  }
+
+  .fighter-emoji { font-size: 42px; margin-bottom: 6px; }
+  .fighter-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; }
+  .fighter-class { font-size: 10px; color: #ff6b35; letter-spacing: 2px; margin-bottom: 8px; }
+  .fighter-hp-bar { background: #222; border-radius: 4px; height: 8px; overflow: hidden; margin: 6px 0; }
+  .fighter-hp-fill { height: 100%; background: linear-gradient(90deg, #4ade80, #22d3ee); transition: width 0.5s; border-radius: 4px; }
+  .fighter-hp-label { font-size: 9px; color: #666; }
+
+  .vs-box {
+    text-align: center;
+    flex: 1;
+  }
+  .vs-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: #ff6b35;
+    line-height: 1;
+  }
+  .round-badge {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ARRAY VIZ */
+  .array-viz {
+    background: #0d0d15;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+
+  .viz-label {
+    font-size: 9px;
+    color: #555;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 100px;
+    padding-top: 10px;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.08s, background 0.1s;
+    min-width: 4px;
+  }
+
+  /* DIALOGUE */
+  .dialogue-box {
+    background: #12121a;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 12px 0;
+    min-height: 60px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c8c4b0;
+    position: relative;
+  }
+
+  .dialogue-speaker {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .stat-box {
+    background: #12121a;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #ffcd3c; }
+  .stat-key { font-size: 9px; color: #555; letter-spacing: 1px; }
+
+  /* CONTROLS */
+  .battle-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    justify-content: center;
+  }
+
+  .btn-sm {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1.5px solid #2a2a3a;
+    background: #12121a;
+    color: #e8e4d0;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: #ff6b35; color: #ff6b35; }
+  .btn-sm.accent {
+    background: #ff6b35;
+    border-color: #ff6b35;
+    color: #000;
+    font-weight: 700;
+  }
+  .btn-sm.accent:hover { background: #e55a25; }
+
+  /* WINNER SCREEN */
+  .trophy-wrap {
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .trophy-emoji { font-size: 72px; animation: bounce 1s ease-in-out infinite alternate; }
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+  }
+
+  .winner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #ffcd3c, #ff6b35);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .winner-quote {
+    font-size: 14px;
+    color: #888;
+    font-style: italic;
+    margin: 12px 0 24px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .speed-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: #1a1a26;
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+  }
+  .speed-btn:hover { border-color: #ff6b35; color: #ff6b35; }
+
+  .confetti { position: fixed; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; }
+</style>
+</head>
+<body>
+
+<div class="arena">
+  <div class="arena-title">ALGORITHM WARS</div>
+  <div class="arena-sub">⚔ Sorting Tournament ⚔</div>
+
+  <!-- SELECT SCREEN -->
+  <div class="screen active" id="screen-select">
+    <p class="select-hint">Choose 4 competitors for the tournament</p>
+    <div class="select-grid" id="algo-grid"></div>
+    <p class="select-hint" id="select-count">0 / 4 selected</p>
+    <button class="btn-primary" id="start-btn" disabled onclick="startTournament()">START TOURNAMENT</button>
+  </div>
+
+  <!-- BRACKET SCREEN -->
+  <div class="screen" id="screen-bracket">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">TOURNAMENT BRACKET</div>
+        <div style="font-size:10px;color:#555;" id="bracket-status">Round 1 of 2</div>
+      </div>
+      <button class="btn-sm accent" id="fight-btn" onclick="proceedToFight()">NEXT FIGHT →</button>
+    </div>
+    <div class="bracket-wrap" id="bracket-display"></div>
+  </div>
+
+  <!-- BATTLE SCREEN -->
+  <div class="screen" id="screen-battle">
+    <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:10px;color:#555;letter-spacing:2px;" id="battle-round-label">SEMIFINAL</div>
+      <button class="btn-sm" onclick="showBracket()">← BRACKET</button>
+    </div>
+
+    <div class="battle-header">
+      <div class="fighter-card fighting" id="fighter-a">
+        <div class="fighter-emoji" id="fa-emoji">🐌</div>
+        <div class="fighter-name" id="fa-name">Bubble Sort</div>
+        <div class="fighter-class" id="fa-class">O(n²)</div>
+        <div class="fighter-hp-bar"><div class="fighter-hp-fill" id="fa-hp" style="width:100%"></div></div>
+        <div class="fighter-hp-label" id="fa-hp-label">100 HP</div>
+      </div>
+
+      <div class="vs-box">
+        <div class="vs-text">VS</div>
+        <div class="round-badge" id="battle-phase">READY</div>
+        <div style="margin-top:10px;font-size:9px;color:#444;" id="battle-progress">— — —</div>
+      </div>
+
+      <div class="fighter-card fighting" id="fighter-b">
+        <div class="fighter-emoji" id="fb-emoji">🎲</div>
+        <div class="fighter-name" id="fb-name">Quick Sort</div>
+        <div class="fighter-class" id="fb-class">O(n log n)</div>
+        <div class="fighter-hp-bar"><div class="fighter-hp-fill" id="fb-hp" style="width:100%"></div></div>
+        <div class="fighter-hp-label" id="fb-hp-label">100 HP</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="stat-swaps">0</div><div class="stat-key">SWAPS</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-comps">0</div><div class="stat-key">COMPARISONS</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-time">0ms</div><div class="stat-key">TIME</div></div>
+    </div>
+
+    <div class="array-viz">
+      <div class="viz-label" id="viz-owner">Sorting...</div>
+      <div class="bars" id="bars-a"></div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-speaker" id="dialogue-speaker" style="color:#ff6b35;">BUBBLE SORT</div>
+      <div id="dialogue-text">Preparing for battle...</div>
+    </div>
+
+    <div class="battle-controls">
+      <button class="btn-sm" id="speed-toggle" onclick="toggleSpeed()">⏩ FAST</button>
+      <button class="btn-sm accent" id="next-phase-btn" onclick="nextPhase()">BEGIN BATTLE</button>
+    </div>
+  </div>
+
+  <!-- WINNER SCREEN -->
+  <div class="screen" id="screen-winner">
+    <div class="trophy-wrap">
+      <div class="trophy-emoji" id="winner-emoji">🏆</div>
+      <div class="winner-name" id="winner-name">Quick Sort</div>
+      <div style="font-size:13px;color:#ff6b35;letter-spacing:2px;margin-top:4px;">TOURNAMENT CHAMPION</div>
+      <div class="winner-quote" id="winner-quote">"Fastest in the land!"</div>
+      <div class="stats-row" style="max-width:400px;margin:0 auto 24px;">
+        <div class="stat-box"><div class="stat-val" id="w-wins">2</div><div class="stat-key">WINS</div></div>
+        <div class="stat-box"><div class="stat-val" id="w-swaps">0</div><div class="stat-key">TOTAL SWAPS</div></div>
+        <div class="stat-box"><div class="stat-val" id="w-comps">0</div><div class="stat-key">TOTAL COMPS</div></div>
+      </div>
+      <button class="btn-primary" style="max-width:300px;margin:0 auto;" onclick="resetAll()">PLAY AGAIN</button>
+    </div>
+  </div>
+
+</div>
+
+<canvas class="confetti" id="confetti" style="display:none;"></canvas>
+
+<script>
+const ALGORITHMS = [
+  {
+    id: 'bubble', name: 'Bubble Sort', emoji: '🐌', complexity: 'O(n²)',
+    personality: 'THE HUMBLE GRINDER',
+    color: '#60a5fa',
+    quote: '"I know I\'m slow... but I never give up!"',
+    taunts: [
+      "I\'ll get there eventually. Patience is a virtue.",
+      "Every swap counts. Even mine.",
+      "Don\'t laugh at me! I\'m doing my best!!",
+      "Slow and steady wins the... actually, I might not win this one.",
+    ],
+    trash: [
+      "You think you\'re so fast? Show some respect!",
+      "I\'ve been sorting since the 1950s! Respect your elders!",
+      "One day I\'ll have my revenge. One swap at a time.",
+    ],
+    sort: bubbleSort
+  },
+  {
+    id: 'quick', name: 'Quick Sort', emoji: '🎲', complexity: 'O(n log n) avg',
+    personality: 'THE COCKY GAMBLER',
+    color: '#f87171',
+    quote: '"Pivot. Destroy. Repeat. That\'s my philosophy."',
+    taunts: [
+      "Watch me find this pivot. It\'s art.",
+      "O(n log n) on average. I said AVERAGE. Live on the edge.",
+      "Worst case O(n²)? That\'s a myth. I\'m a god.",
+      "Recursion is just confidence going deeper.",
+    ],
+    trash: [
+      "You call that sorting? I do that in my sleep.",
+      "Keep comparing, slowpoke. I\'m already done.",
+      "My pivot game is unmatched. Accept it.",
+    ],
+    sort: quickSort
+  },
+  {
+    id: 'merge', name: 'Merge Sort', emoji: '🧠', complexity: 'O(n log n)',
+    personality: 'THE STRATEGIC GENIUS',
+    color: '#a78bfa',
+    quote: '"Divide. Conquer. Repeat. Emotion is inefficiency."',
+    taunts: [
+      "Divide and conquer. It\'s not complicated.",
+      "I guarantee O(n log n). Guaranteed. That\'s called reliability.",
+      "Recursion depth increasing. Optimal.",
+      "Your algorithm lacks structure. Mine does not.",
+    ],
+    trash: [
+      "Predictability is a strength, not a weakness.",
+      "I require extra space. Excellence has a cost.",
+      "You fight with randomness. I operate with certainty.",
+    ],
+    sort: mergeSort
+  },
+  {
+    id: 'insertion', name: 'Insertion Sort', emoji: '✋', complexity: 'O(n²)',
+    personality: 'THE CARD SHARK',
+    color: '#34d399',
+    quote: '"One by one. Hand-picked. Like a poker pro."',
+    taunts: [
+      "Pick a card, any card. I\'ll place it perfectly.",
+      "Nearly sorted data? This is my domain.",
+      "I insert with precision. Every. Single. Time.",
+      "Small arrays tremble before me.",
+    ],
+    trash: [
+      "Adaptive algorithm, baby. I sense nearly sorted data from miles away.",
+      "You waste time on big arrays. I dominate the small ones.",
+      "Online algorithm. I sort while the data arrives. Can you say the same?",
+    ],
+    sort: insertionSort
+  },
+  {
+    id: 'selection', name: 'Selection Sort', emoji: '🎯', complexity: 'O(n²)',
+    personality: 'THE STUBBORN SNIPER',
+    color: '#fb923c',
+    quote: '"Find the minimum. Every time. Simple wins."',
+    taunts: [
+      "Minimum found. Placed. Moving on.",
+      "I make exactly n swaps. Precision over speed.",
+      "Consistent? Absolutely. Fast? ...Relatively.",
+      "Scanning for minimum. This is fine. This is my purpose.",
+    ],
+    trash: [
+      "At least I know how many swaps I\'ll make. Do YOU?",
+      "Minimum swaps. Maximum dignity.",
+      "I don\'t rush. I aim.",
+    ],
+    sort: selectionSort
+  },
+  {
+    id: 'heap', name: 'Heap Sort', emoji: '🌋', complexity: 'O(n log n)',
+    personality: 'THE SILENT VOLCANO',
+    color: '#ef4444',
+    quote: '"The heap provides. The heap takes away."',
+    taunts: [
+      "Heapify. Extract. Repeat. I am inevitable.",
+      "In-place. O(n log n). No recursion. I need nothing from you.",
+      "The heap structure is perfect. I am its servant.",
+      "You fear the volcano. You should.",
+    ],
+    trash: [
+      "Merge Sort needs extra space. I need nothing. NOTHING.",
+      "Cache performance? Overrated. Power is underrated.",
+      "I was built from the earth itself. You are temporary.",
+    ],
+    sort: heapSort
+  },
+];
+
+let selectedIds = [];
+let tournament = { bracket: [], matchIndex: 0, round: 1, winners: [] };
+let currentMatch = null;
+let battleState = null;
+let fastMode = false;
+let winnerStats = { totalSwaps: 0, totalComps: 0, wins: 0 };
+let battleInterval = null;
+let phaseStep = 0;
+
+function getAlgo(id) { return ALGORITHMS.find(a => a.id === id); }
+
+function initSelectScreen() {
+  const grid = document.getElementById('algo-grid');
+  grid.innerHTML = '';
+  ALGORITHMS.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'algo-card';
+    card.id = 'card-' + a.id;
+    card.onclick = () => toggleSelect(a.id);
+    card.innerHTML = `
+      <div class="check">✓</div>
+      <div class="algo-emoji">${a.emoji}</div>
+      <div class="algo-name">${a.name}</div>
+      <div class="algo-class">${a.complexity}</div>
+      <div class="algo-tagline">${a.personality}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function toggleSelect(id) {
+  const idx = selectedIds.indexOf(id);
+  if (idx === -1) {
+    if (selectedIds.length >= 4) return;
+    selectedIds.push(id);
+    document.getElementById('card-' + id).classList.add('selected');
+  } else {
+    selectedIds.splice(idx, 1);
+    document.getElementById('card-' + id).classList.remove('selected');
+  }
+  document.getElementById('select-count').textContent = selectedIds.length + ' / 4 selected';
+  document.getElementById('start-btn').disabled = selectedIds.length !== 4;
+}
+
+function startTournament() {
+  const shuffled = [...selectedIds].sort(() => Math.random() - 0.5);
+  tournament = {
+    bracket: [
+      { a: shuffled[0], b: shuffled[1], winner: null, round: 1, matchNum: 1 },
+      { a: shuffled[2], b: shuffled[3], winner: null, round: 1, matchNum: 2 },
+      { a: null, b: null, winner: null, round: 2, matchNum: 1 }
+    ],
+    matchIndex: 0,
+    currentMatchId: 0
+  };
+  showScreen('bracket');
+  renderBracket();
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function renderBracket() {
+  const display = document.getElementById('bracket-display');
+  display.innerHTML = '';
+
+  const rounds = [
+    { label: 'SEMIFINALS', matches: tournament.bracket.filter(m => m.round === 1) },
+    { label: 'FINAL', matches: tournament.bracket.filter(m => m.round === 2) }
+  ];
+
+  rounds.forEach(round => {
+    const col = document.createElement('div');
+    col.className = 'bracket-round';
+    col.innerHTML = `<div class="round-label">${round.label}</div>`;
+
+    round.matches.forEach(match => {
+      [match.a, match.b].forEach((algoId, i) => {
+        const a = algoId ? getAlgo(algoId) : null;
+        const slot = document.createElement('div');
+        slot.className = 'bracket-slot';
+        if (!algoId) {
+          slot.classList.add('tbd');
+          slot.innerHTML = `<div style="font-size:11px;color:#444;">TBD</div>`;
+        } else {
+          if (match.winner === algoId) slot.classList.add('winner');
+          else if (match.winner && match.winner !== algoId) slot.classList.add('loser');
+          else if (!match.winner && tournament.bracket[tournament.matchIndex] === match) slot.classList.add('active');
+          slot.innerHTML = `
+            <div class="slot-emoji">${a.emoji}</div>
+            <div>
+              <div class="slot-name">${a.name}</div>
+              <div class="slot-class">${a.complexity}</div>
+            </div>
+            ${match.winner === algoId ? '<div style="margin-left:auto;color:#ffcd3c;font-size:12px;">★</div>' : ''}
+          `;
+        }
+        col.appendChild(slot);
+        if (i === 0) {
+          const vs = document.createElement('div');
+          vs.className = 'vs-connector';
+          vs.textContent = '⚔';
+          col.appendChild(vs);
+        }
+      });
+      col.appendChild(document.createElement('div')).style.height = '16px';
+    });
+
+    display.appendChild(col);
+
+    // Arrow
+    const arrow = document.createElement('div');
+    arrow.style = 'display:flex;align-items:center;color:#333;font-size:20px;padding-top:30px;';
+    arrow.textContent = '→';
+    display.appendChild(arrow);
+  });
+
+  // Update button
+  const m = tournament.bracket[tournament.matchIndex];
+  const fightBtn = document.getElementById('fight-btn');
+  if (!m || (m.round === 2 && tournament.bracket[1].winner && tournament.bracket[0].winner && m.winner)) {
+    fightBtn.textContent = 'VIEW WINNER';
+    fightBtn.onclick = showWinner;
+  } else if (m && m.a && m.b) {
+    const aName = getAlgo(m.a).name.split(' ')[0];
+    const bName = getAlgo(m.b).name.split(' ')[0];
+    fightBtn.textContent = `FIGHT: ${aName} vs ${bName} →`;
+    fightBtn.onclick = proceedToFight;
+  }
+
+  const completedRound1 = tournament.bracket.filter(m => m.round === 1 && m.winner).length;
+  document.getElementById('bracket-status').textContent = completedRound1 < 2 ? 'Round 1 of 2 — Semifinals' : 'Round 2 of 2 — Grand Final';
+}
+
+function proceedToFight() {
+  const match = tournament.bracket[tournament.matchIndex];
+  if (!match || !match.a || !match.b) return;
+  currentMatch = match;
+  startBattle(match.a, match.b);
+}
+
+function showBracket() {
+  if (battleInterval) { clearInterval(battleInterval); battleInterval = null; }
+  showScreen('bracket');
+  renderBracket();
+}
+
+function startBattle(idA, idB) {
+  showScreen('battle');
+  const algoA = getAlgo(idA);
+  const algoB = getAlgo(idB);
+
+  const isFinale = currentMatch.round === 2;
+  document.getElementById('battle-round-label').textContent = isFinale ? '⚔ GRAND FINAL ⚔' : '⚔ SEMIFINAL ⚔';
+
+  // Setup fighters
+  document.getElementById('fa-emoji').textContent = algoA.emoji;
+  document.getElementById('fa-name').textContent = algoA.name;
+  document.getElementById('fa-class').textContent = algoA.complexity;
+  document.getElementById('fb-emoji').textContent = algoB.emoji;
+  document.getElementById('fb-name').textContent = algoB.name;
+  document.getElementById('fb-class').textContent = algoB.complexity;
+  document.getElementById('fa-hp').style.width = '100%';
+  document.getElementById('fb-hp').style.width = '100%';
+  document.getElementById('fa-hp-label').textContent = '100 HP';
+  document.getElementById('fb-hp-label').textContent = '100 HP';
+  document.getElementById('fighter-a').className = 'fighter-card fighting';
+  document.getElementById('fighter-b').className = 'fighter-card fighting';
+
+  // Generate array
+  const size = 30;
+  const arr = Array.from({length: size}, () => Math.floor(Math.random() * 95) + 5);
+
+  // Run both sorts and collect stats
+  const arrA = [...arr], arrB = [...arr];
+  const stepsA = algoA.sort([...arrA]);
+  const stepsB = algoB.sort([...arrB]);
+
+  battleState = {
+    algoA, algoB, arr: [...arr],
+    stepsA, stepsB,
+    stepIdxA: 0, stepIdxB: 0,
+    swapsA: 0, swapsB: 0,
+    compsA: 0, compsB: 0,
+    startTime: Date.now(),
+    currentDisplayArr: [...arr],
+    phase: 'intro', // intro → fightA → fightB → result
+    winner: null
+  };
+
+  phaseStep = 0;
+  document.getElementById('next-phase-btn').textContent = 'BEGIN BATTLE';
+  document.getElementById('battle-phase').textContent = 'READY';
+  document.getElementById('battle-progress').textContent = '— — —';
+  document.getElementById('stat-swaps').textContent = '0';
+  document.getElementById('stat-comps').textContent = '0';
+  document.getElementById('stat-time').textContent = '0ms';
+
+  renderBars(arr, [], [], algoA.color);
+  setDialogue(algoA, algoA.taunts[0]);
+}
+
+function renderBars(arr, highlighted, sorted, mainColor) {
+  const container = document.getElementById('bars-a');
+  const maxVal = Math.max(...arr);
+  container.innerHTML = '';
+  arr.forEach((v, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = ((v / maxVal) * 90) + '%';
+    if (sorted.includes(i)) bar.style.background = '#4ade80';
+    else if (highlighted.includes(i)) bar.style.background = '#ffcd3c';
+    else bar.style.background = mainColor || '#60a5fa';
+    container.appendChild(bar);
+  });
+}
+
+function setDialogue(algo, text) {
+  document.getElementById('dialogue-speaker').style.color = algo.color;
+  document.getElementById('dialogue-speaker').textContent = algo.name.toUpperCase();
+  document.getElementById('dialogue-text').textContent = text;
+}
+
+function nextPhase() {
+  if (!battleState) return;
+  if (battleInterval) { clearInterval(battleInterval); battleInterval = null; }
+
+  const { algoA, algoB } = battleState;
+
+  if (battleState.phase === 'intro') {
+    // Fight A
+    battleState.phase = 'fightA';
+    document.getElementById('next-phase-btn').textContent = 'SKIP →';
+    document.getElementById('battle-phase').textContent = 'ROUND 1';
+    document.getElementById('viz-owner').textContent = `${algoA.name.toUpperCase()} IS SORTING...`;
+    setDialogue(algoA, algoA.taunts[Math.floor(Math.random() * algoA.taunts.length)]);
+    document.getElementById('fighter-a').className = 'fighter-card fighting';
+    document.getElementById('fighter-b').className = 'fighter-card';
+
+    const displayArr = [...battleState.arr];
+    let stepIdx = 0;
+    let swaps = 0, comps = 0;
+    const delay = fastMode ? 10 : 50;
+
+    battleInterval = setInterval(() => {
+      const steps = battleState.stepsA;
+      if (stepIdx >= steps.length) {
+        clearInterval(battleInterval);
+        battleState.swapsA = swaps;
+        battleState.compsA = comps;
+        battleState.timeA = Date.now() - battleState.startTime;
+        renderBars(displayArr, [], Array.from({length: displayArr.length}, (_, i) => i), algoA.color);
+        document.getElementById('stat-swaps').textContent = swaps;
+        document.getElementById('stat-comps').textContent = comps;
+        document.getElementById('stat-time').textContent = battleState.timeA + 'ms';
+        document.getElementById('battle-progress').textContent = `${algoA.name}: ${swaps} swaps, ${comps} comps`;
+        battleState.phase = 'fightB_ready';
+        document.getElementById('next-phase-btn').textContent = `${algoB.emoji} ${algoB.name} TURN →`;
+        setDialogue(algoA, algoA.trash[Math.floor(Math.random() * algoA.trash.length)]);
+        return;
+      }
+      const batch = fastMode ? 8 : 2;
+      for (let b = 0; b < batch && stepIdx < steps.length; b++, stepIdx++) {
+        const step = steps[stepIdx];
+        if (step.type === 'swap') {
+          [displayArr[step.i], displayArr[step.j]] = [displayArr[step.j], displayArr[step.i]];
+          swaps++;
+        }
+        comps++;
+      }
+      const pct = stepIdx / steps.length;
+      const hp = Math.max(10, Math.floor((1 - pct * 0.3) * 100));
+      document.getElementById('fb-hp').style.width = hp + '%';
+      document.getElementById('fb-hp-label').textContent = hp + ' HP';
+      renderBars(displayArr, steps[Math.min(stepIdx, steps.length - 1)]?.highlights || [], [], algoA.color);
+      document.getElementById('stat-swaps').textContent = swaps;
+      document.getElementById('stat-comps').textContent = comps;
+      document.getElementById('stat-time').textContent = (Date.now() - battleState.startTime) + 'ms';
+    }, delay);
+
+  } else if (battleState.phase === 'fightB_ready') {
+    // Fight B
+    battleState.phase = 'fightB';
+    document.getElementById('next-phase-btn').textContent = 'SKIP →';
+    document.getElementById('battle-phase').textContent = 'ROUND 2';
+    document.getElementById('viz-owner').textContent = `${algoB.name.toUpperCase()} IS SORTING...`;
+    setDialogue(algoB, algoB.taunts[Math.floor(Math.random() * algoB.taunts.length)]);
+    document.getElementById('fighter-a').className = 'fighter-card';
+    document.getElementById('fighter-b').className = 'fighter-card fighting';
+
+    const displayArr2 = [...battleState.arr];
+    let stepIdx2 = 0;
+    let swaps2 = 0, comps2 = 0;
+    const delay2 = fastMode ? 10 : 50;
+
+    battleInterval = setInterval(() => {
+      const steps = battleState.stepsB;
+      if (stepIdx2 >= steps.length) {
+        clearInterval(battleInterval);
+        battleState.swapsB = swaps2;
+        battleState.compsB = comps2;
+        battleState.timeB = Date.now() - battleState.startTime - battleState.timeA;
+        renderBars(displayArr2, [], Array.from({length: displayArr2.length}, (_, i) => i), algoB.color);
+        document.getElementById('stat-swaps').textContent = swaps2;
+        document.getElementById('stat-comps').textContent = comps2;
+        document.getElementById('battle-progress').textContent = `${algoB.name}: ${swaps2} swaps, ${comps2} comps`;
+        battleState.phase = 'result';
+        document.getElementById('next-phase-btn').textContent = '⚖ JUDGE → REVEAL WINNER';
+        setDialogue(algoB, algoB.trash[Math.floor(Math.random() * algoB.trash.length)]);
+        return;
+      }
+      const batch2 = fastMode ? 8 : 2;
+      for (let b = 0; b < batch2 && stepIdx2 < steps.length; b++, stepIdx2++) {
+        const step = steps[stepIdx2];
+        if (step.type === 'swap') {
+          [displayArr2[step.i], displayArr2[step.j]] = [displayArr2[step.j], displayArr2[step.i]];
+          swaps2++;
+        }
+        comps2++;
+      }
+      const pct2 = stepIdx2 / steps.length;
+      const hp2 = Math.max(10, Math.floor((1 - pct2 * 0.3) * 100));
+      document.getElementById('fa-hp').style.width = hp2 + '%';
+      document.getElementById('fa-hp-label').textContent = hp2 + ' HP';
+      renderBars(displayArr2, steps[Math.min(stepIdx2, steps.length - 1)]?.highlights || [], [], algoB.color);
+      document.getElementById('stat-swaps').textContent = swaps2;
+      document.getElementById('stat-comps').textContent = comps2;
+    }, delay2);
+
+  } else if (battleState.phase === 'result') {
+    // Judge winner — lower swaps+comps wins (with tiebreaker)
+    const { algoA, algoB, swapsA, compsA, swapsB, compsB } = battleState;
+    const scoreA = swapsA * 2 + compsA;
+    const scoreB = swapsB * 2 + compsB;
+    const winnerAlgo = scoreA <= scoreB ? algoA : algoB;
+    const loserAlgo = scoreA <= scoreB ? algoB : algoA;
+    battleState.winner = winnerAlgo;
+
+    document.getElementById('fa-hp').style.width = (scoreA <= scoreB ? '80' : '15') + '%';
+    document.getElementById('fb-hp').style.width = (scoreB < scoreA ? '80' : '15') + '%';
+    document.getElementById('fighter-a').className = 'fighter-card ' + (winnerAlgo.id === algoA.id ? 'won' : 'lost');
+    document.getElementById('fighter-b').className = 'fighter-card ' + (winnerAlgo.id === algoB.id ? 'won' : 'lost');
+    document.getElementById('battle-phase').textContent = '★ WINNER ★';
+    setDialogue(winnerAlgo, `${winnerAlgo.emoji} ${winnerAlgo.taunts[Math.floor(Math.random() * winnerAlgo.taunts.length)]}`);
+    document.getElementById('next-phase-btn').textContent = 'CONTINUE TO BRACKET →';
+    battleState.phase = 'done';
+
+    // Record
+    currentMatch.winner = winnerAlgo.id;
+    winnerStats.totalSwaps += Math.min(swapsA, swapsB);
+    winnerStats.totalComps += Math.min(compsA, compsB);
+    winnerStats.wins++;
+
+    // Advance bracket
+    tournament.matchIndex++;
+    const nextMatch = tournament.bracket[tournament.matchIndex];
+    if (nextMatch && nextMatch.round === 2) {
+      const r1winners = tournament.bracket.filter(m => m.round === 1 && m.winner).map(m => m.winner);
+      nextMatch.a = r1winners[0] || null;
+      nextMatch.b = r1winners[1] || null;
+    }
+
+  } else if (battleState.phase === 'done') {
+    showBracket();
+    // Check if all done
+    const finalMatch = tournament.bracket.find(m => m.round === 2);
+    if (finalMatch && finalMatch.winner) {
+      document.getElementById('fight-btn').textContent = 'VIEW WINNER 🏆';
+      document.getElementById('fight-btn').onclick = showWinner;
+    }
+  }
+}
+
+function showWinner() {
+  const finalMatch = tournament.bracket.find(m => m.round === 2);
+  const champ = getAlgo(finalMatch.winner);
+  document.getElementById('winner-emoji').textContent = champ.emoji;
+  document.getElementById('winner-name').textContent = champ.name;
+  document.getElementById('winner-quote').textContent = champ.quote;
+  document.getElementById('w-wins').textContent = winnerStats.wins;
+  document.getElementById('w-swaps').textContent = winnerStats.totalSwaps;
+  document.getElementById('w-comps').textContent = winnerStats.totalComps;
+  showScreen('winner');
+  fireConfetti();
+}
+
+function toggleSpeed() {
+  fastMode = !fastMode;
+  document.getElementById('speed-toggle').textContent = fastMode ? '🐢 SLOW' : '⏩ FAST';
+}
+
+function resetAll() {
+  selectedIds = [];
+  tournament = { bracket: [], matchIndex: 0 };
+  winnerStats = { totalSwaps: 0, totalComps: 0, wins: 0 };
+  if (battleInterval) { clearInterval(battleInterval); battleInterval = null; }
+  initSelectScreen();
+  showScreen('select');
+  document.getElementById('confetti').style.display = 'none';
+}
+
+// ============ SORT ALGORITHMS ============
+function bubbleSort(arr) {
+  const a = [...arr], steps = [], n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      steps.push({ type: 'compare', highlights: [j, j+1] });
+      if (a[j] > a[j+1]) {
+        [a[j], a[j+1]] = [a[j+1], a[j]];
+        steps.push({ type: 'swap', i: j, j: j+1, highlights: [j, j+1] });
+      }
+    }
+  }
+  return steps;
+}
+
+function quickSort(arr) {
+  const a = [...arr], steps = [];
+  function qs(lo, hi) {
+    if (lo >= hi) return;
+    const pivot = a[hi];
+    let p = lo;
+    for (let i = lo; i < hi; i++) {
+      steps.push({ type: 'compare', highlights: [i, hi] });
+      if (a[i] <= pivot) {
+        if (i !== p) { [a[i], a[p]] = [a[p], a[i]]; steps.push({ type: 'swap', i, j: p, highlights: [i, p] }); }
+        p++;
+      }
+    }
+    [a[p], a[hi]] = [a[hi], a[p]];
+    steps.push({ type: 'swap', i: p, j: hi, highlights: [p, hi] });
+    qs(lo, p - 1);
+    qs(p + 1, hi);
+  }
+  qs(0, a.length - 1);
+  return steps;
+}
+
+function mergeSort(arr) {
+  const a = [...arr], steps = [];
+  function ms(lo, hi) {
+    if (lo >= hi) return;
+    const mid = Math.floor((lo + hi) / 2);
+    ms(lo, mid); ms(mid+1, hi);
+    const left = a.slice(lo, mid+1), right = a.slice(mid+1, hi+1);
+    let i = 0, j = 0, k = lo;
+    while (i < left.length && j < right.length) {
+      steps.push({ type: 'compare', highlights: [lo+i, mid+1+j] });
+      if (left[i] <= right[j]) { a[k++] = left[i++]; }
+      else { a[k++] = right[j++]; steps.push({ type: 'swap', i: k-1, j: k, highlights: [k-1] }); }
+    }
+    while (i < left.length) { a[k++] = left[i++]; }
+    while (j < right.length) { a[k++] = right[j++]; }
+  }
+  ms(0, a.length - 1);
+  return steps;
+}
+
+function insertionSort(arr) {
+  const a = [...arr], steps = [];
+  for (let i = 1; i < a.length; i++) {
+    let j = i;
+    while (j > 0) {
+      steps.push({ type: 'compare', highlights: [j, j-1] });
+      if (a[j] < a[j-1]) { [a[j], a[j-1]] = [a[j-1], a[j]]; steps.push({ type: 'swap', i: j, j: j-1, highlights: [j, j-1] }); j--; }
+      else break;
+    }
+  }
+  return steps;
+}
+
+function selectionSort(arr) {
+  const a = [...arr], steps = [];
+  for (let i = 0; i < a.length - 1; i++) {
+    let minIdx = i;
+    for (let j = i+1; j < a.length; j++) {
+      steps.push({ type: 'compare', highlights: [j, minIdx] });
+      if (a[j] < a[minIdx]) minIdx = j;
+    }
+    if (minIdx !== i) { [a[i], a[minIdx]] = [a[minIdx], a[i]]; steps.push({ type: 'swap', i, j: minIdx, highlights: [i, minIdx] }); }
+  }
+  return steps;
+}
+
+function heapSort(arr) {
+  const a = [...arr], steps = [], n = a.length;
+  function heapify(n, i) {
+    let largest = i, l = 2*i+1, r = 2*i+2;
+    steps.push({ type: 'compare', highlights: [i, l < n ? l : i] });
+    if (l < n && a[l] > a[largest]) largest = l;
+    if (r < n && a[r] > a[largest]) largest = r;
+    if (largest !== i) { [a[i], a[largest]] = [a[largest], a[i]]; steps.push({ type: 'swap', i, j: largest, highlights: [i, largest] }); heapify(n, largest); }
+  }
+  for (let i = Math.floor(n/2)-1; i >= 0; i--) heapify(n, i);
+  for (let i = n-1; i > 0; i--) { [a[0], a[i]] = [a[i], a[0]]; steps.push({ type: 'swap', i: 0, j: i, highlights: [0, i] }); heapify(i, 0); }
+  return steps;
+}
+
+// ============ CONFETTI ============
+function fireConfetti() {
+  const canvas = document.getElementById('confetti');
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height,
+    size: Math.random() * 8 + 4,
+    color: ['#ffcd3c','#ff6b35','#f87171','#34d399','#60a5fa'][Math.floor(Math.random()*5)],
+    speed: Math.random() * 3 + 2,
+    angle: Math.random() * 360,
+    spin: Math.random() * 6 - 3
+  }));
+  let frames = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.y += p.speed; p.angle += p.spin;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle * Math.PI/180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+      ctx.restore();
+    });
+    frames++;
+    if (frames < 180) requestAnimationFrame(draw);
+    else canvas.style.display = 'none';
+  }
+  draw();
+}
+
+// Init
+initSelectScreen();
+</script>
+</body>
+</html>
